@@ -31,42 +31,48 @@ if (isValidUrl(url)) {
   const iconifyRequests = requests.filter((item) =>
     item.startsWith("https://api.iconify.design/")
   );
-  const re =
-    /https:\/\/api\.iconify\.design\/(?<iconset>.+)\.json\?icons=(?<icons>.+)/;
-  const iconsInSets = iconifyRequests
-    .map((item) => item.match(re).groups)
-    .map((item) => ({
-      iconset: item.iconset,
-      icons: item.icons.split("%2C"),
-    }))
-    .reduce(
-      (obj, item) => Object.assign(obj, { [item.iconset]: item.icons }),
-      {}
-    );
+  if (iconifyRequests.length === 0) {
+    console.log("Looks like you don't have any iconify icons on this page");
+  } else {
+    const re =
+      /https:\/\/api\.iconify\.design\/(?<iconset>.+)\.json\?icons=(?<icons>.+)/;
+    const iconsInSets = iconifyRequests
+      .map((item) => item.match(re).groups)
+      .map((item) => ({
+        iconset: item.iconset,
+        icons: item.icons.split("%2C"),
+      }))
+      .reduce(
+        (obj, item) => Object.assign(obj, { [item.iconset]: item.icons }),
+        {}
+      );
 
-  // Get licenses of used collections
-  const allCollections = await lookupCollections();
-  const iconLicenses = Object.entries(allCollections)
-    .filter(([key]) => Object.keys(iconsInSets).includes(key))
-    .map(([key, value]) => ({ iconSet: key, license: value.license.spdx }));
+    // Get licenses of used collections
+    const allCollections = await lookupCollections();
+    const iconLicenses = Object.entries(allCollections)
+      .filter(([key]) => Object.keys(iconsInSets).includes(key))
+      .map(([key, value]) => ({ iconSet: key, license: value.license.spdx }));
 
-  // Group by License
-  let result = {};
-  iconLicenses.forEach((item) => {
-    if (item.license in result) {
-      result[item.license].push(item.iconSet);
-    } else {
-      result[item.license] = [item.iconSet];
-    }
-  });
-  // Log results
-  Object.entries(result).forEach(([license, set]) => {
-    console.log(chalk.bold(license));
-    set.forEach((item) => {
-      console.log(" " + item);
-      iconsInSets[item].forEach((item) => console.log("   " + chalk.dim(item)));
+    // Group by License
+    let result = {};
+    iconLicenses.forEach((item) => {
+      if (item.license in result) {
+        result[item.license].push(item.iconSet);
+      } else {
+        result[item.license] = [item.iconSet];
+      }
     });
-  });
+    // Log results
+    Object.entries(result).forEach(([license, set]) => {
+      console.log(chalk.bold(license));
+      set.forEach((item) => {
+        console.log(" " + item);
+        iconsInSets[item].forEach((item) =>
+          console.log("   " + chalk.dim(item))
+        );
+      });
+    });
+  }
 } else {
   console.log("Run this script with the url as the last parameter");
 }
