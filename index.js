@@ -14,7 +14,7 @@ const isValidUrl = (urlString) => {
 const url = process.argv[process.argv.length - 1];
 if (isValidUrl(url)) {
   // Get all network requests of a page
-  const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
+  const browser = await puppeteer.launch();
   const page = await browser.newPage();
   await page.setRequestInterception(true);
   const requests = [];
@@ -38,28 +38,19 @@ if (isValidUrl(url)) {
       /https:\/\/api\.iconify\.design\/(?<iconset>.+)\.json\?icons=(?<icons>.+)/;
     const iconsInSets = iconifyRequests
       .map((item) => item.match(re).groups)
-      .map((item) => ({
-        iconset: item.iconset,
-        icons: item.icons.split("%2C"),
-      }))
       .reduce(
-        (obj, item) => Object.assign(obj, { [item.iconset]: item.icons }),
+        (obj, item) =>
+          Object.assign(obj, { [item.iconset]: item.icons.split("%2C") }),
         {}
       );
-
     // Get licenses of used collections
     const allCollections = await lookupCollections();
-    const iconLicenses = Object.entries(allCollections)
-      .filter(([key]) => Object.keys(iconsInSets).includes(key))
-      .map(([key, value]) => ({ iconSet: key, license: value.license.spdx }));
-
-    // Group by License
     let result = {};
-    iconLicenses.forEach((item) => {
-      if (item.license in result) {
-        result[item.license].push(item.iconSet);
+    Object.keys(iconsInSets).forEach((item) => {
+      if (allCollections[item].license.spdx in result) {
+        result[allCollections[item].license.spdx].push(item);
       } else {
-        result[item.license] = [item.iconSet];
+        result[allCollections[item].license.spdx] = [item];
       }
     });
     // Log results
