@@ -13,7 +13,7 @@ const isValidUrl = (urlString) => {
 const url = process.argv[process.argv.length - 1];
 if (!isValidUrl(url)) {
   console.log("Run this script with the url as the last parameter");
-  return;
+  process.exit(1);
 }
 // Get all network requests of a page
 const browser = await puppeteer.launch();
@@ -36,7 +36,7 @@ const iconifyRequests = requests.filter((item) =>
 
 if (iconifyRequests.length === 0) {
   console.log("Looks like you don't have any iconify icons on this page");
-  return;
+  process.exit(1);
 }
 
 const re =
